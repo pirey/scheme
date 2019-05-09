@@ -27,6 +27,6 @@ executable myscheme
   main-is:             Main.hs
   -- other-modules:
   -- other-extensions:
-  build-depends:       base ^>=4.12.0.0, parsec
+  build-depends:       base ^>=4.12.0.0, parsec, mtl
   hs-source-dirs:      src
   default-language:    Haskell2010
