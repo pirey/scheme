@@ -4,6 +4,7 @@ module Scheme where
 
 import Control.Monad
 import Control.Monad.Except
+import System.IO
 import Text.ParserCombinators.Parsec hiding (spaces)
 
 -- LispVal
@@ -68,7 +69,7 @@ unpackEquals arg1 arg2 (AnyUnpacker unpacker) =
   do unpacked1 <- unpacker arg1
      unpacked2 <- unpacker arg2
      return $ unpacked1 == unpacked2
-     `catchError` (const $ return False)
+     `catchError` const (return False)
 
 parseString :: Parser LispVal
 parseString = do
@@ -264,14 +265,39 @@ eqv badArgList = throwError $ NumArgs 2 badArgList
 equal :: [LispVal] -> ThrowsError LispVal
 equal [arg1, arg2] = do
   primitiveEquals <-
-    liftM or $
+    or <$>
     mapM
       (unpackEquals arg1 arg2)
       [AnyUnpacker unpackNum, AnyUnpacker unpackStr, AnyUnpacker unpackBool]
   eqvEquals <- eqv [arg1, arg2]
   return $
-    Bool $
-    (primitiveEquals ||
-     let (Bool x) = eqvEquals
-      in x)
+    Bool
+      (primitiveEquals ||
+       let (Bool x) = eqvEquals
+        in x)
 equal badArgList = throwError $ NumArgs 2 badArgList
+
+-- IO
+flushStr :: String -> IO ()
+flushStr str = putStr str >> hFlush stdout
+
+readPrompt :: String -> IO String
+readPrompt prompt = flushStr prompt >> getLine
+
+evalString :: String -> IO String
+evalString expr =
+  return $ extractValue $ trapError (fmap show $ readExpr expr >>= eval)
+
+evalAndPrint :: String -> IO ()
+evalAndPrint expr = evalString expr >>= putStrLn
+
+-- loop
+until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
+until_ pred prompt action = do
+  result <- prompt
+  if pred result
+    then return ()
+    else action result >> until_ pred prompt action
+
+runRepl :: IO ()
+runRepl = until_ (== "quit") (readPrompt "Lisp>>> ") evalAndPrint
