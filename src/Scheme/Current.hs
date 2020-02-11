@@ -1,6 +1,6 @@
 module Scheme.Current where
 
-import Scheme.Repl as Repl
+import Scheme.Variable as Scheme
 
 main_ :: IO ()
-main_ = Repl.main_
+main_ = Scheme.main_
