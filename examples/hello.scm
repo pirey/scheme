@@ -1,4 +1,4 @@
-(define (tambah x y) (+ x y))
-(define (kurang x y) (- x y))
+(write "Hello, Scheme!")
 
-(tambah 1 (kurang 2 35))
+(define (area p l) (* p l))
+(write (area 5 4))
