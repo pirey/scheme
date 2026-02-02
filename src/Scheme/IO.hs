@@ -9,9 +9,9 @@ import Control.Monad.Except (
     runExceptT,
  )
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import qualified Data.Functor
+import Data.Functor ((<&>))
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
-import qualified Data.Maybe
+import Data.Maybe (isNothing, isJust)
 import System.Environment (getArgs)
 import System.IO (
     Handle,
@@ -63,7 +63,7 @@ runIOThrows action = extractValue <$> runExceptT (trapError action)
 
 isBound :: Env -> String -> IO Bool
 isBound envRef var =
-    readIORef envRef Data.Functor.<&> (Data.Maybe.isJust . lookup var)
+    readIORef envRef <&> (isJust . lookup var)
 
 getVar :: Env -> String -> IOThrowsError LispVal
 getVar envRef var = do
@@ -251,7 +251,7 @@ type FuncName = String
 apply :: LispVal -> [LispVal] -> IOThrowsError LispVal
 apply (PrimitiveFunc func) args = liftThrows $ func args
 apply (Func params varargs body closure) args =
-    if num params /= num args && Data.Maybe.isNothing varargs
+    if num params /= num args && isNothing varargs
         then throwError $ NumArgs (num params) args
         else
             liftIO (bindVars closure $ zip params args)
@@ -368,7 +368,7 @@ numericBinop ::
 numericBinop op [] = throwError $ NumArgs 2 []
 numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
 -- numericBinop op params = Number $ foldl1 op $ map unpackNum params
-numericBinop op params = mapM unpackNum params Data.Functor.<&> (Number . foldl1 op)
+numericBinop op params = mapM unpackNum params <&> (Number . foldl1 op)
 
 unpackNum :: LispVal -> ThrowsError Integer
 unpackNum (Number n) = return n
